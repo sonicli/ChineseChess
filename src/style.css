@@ -1,0 +1,388 @@
+:root {
+  --ink: #140c08;
+  --lacquer: #8e1c28;
+  --gold: #c9a227;
+  --paper: #e8dcc4;
+  --muted: #cbbba0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #7ec4ee;
+  color: var(--paper);
+  font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.brand {
+  position: fixed;
+  top: 6vh;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  text-align: center;
+  pointer-events: none;
+  animation: rise 1.4s ease both;
+}
+
+.brand h1 {
+  font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
+  font-size: clamp(2.8rem, 8vw, 5.4rem);
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: var(--gold);
+  text-shadow:
+    0 1px 0 rgba(20, 40, 10, 0.35),
+    0 2px 18px rgba(20, 40, 10, 0.55);
+  line-height: 1;
+}
+
+.brand p {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.62em;
+  text-indent: 0.62em;
+  color: #3d4a28;
+}
+
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 5vh;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: rise 1.4s 0.2s ease both;
+}
+
+.status {
+  font-size: 1.05rem;
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  color: #1e2a14;
+  text-shadow: 0 1px 10px rgba(255, 255, 255, 0.45);
+  min-height: 1.4em;
+}
+
+.status.check {
+  color: #e8b43a;
+}
+
+.status.over {
+  color: #f0c36a;
+}
+
+.actions {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbox {
+  position: fixed;
+  right: 1.4rem;
+  bottom: 1.4rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.toolbox-trigger {
+  appearance: none;
+  background: rgba(255, 252, 240, 0.72);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  border-radius: 999px;
+  color: var(--gold);
+  font: inherit;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0.55rem 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 2px 14px rgba(20, 40, 10, 0.12);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.toolbox-trigger:hover {
+  background: rgba(255, 252, 240, 0.92);
+  color: #3a2a08;
+  border-color: #3a2a08;
+}
+
+.toolbox-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+}
+
+.toolbox:hover .toolbox-panel,
+.toolbox:focus-within .toolbox-panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.toolbox-panel button {
+  white-space: nowrap;
+}
+
+.toolbox .style-wrap {
+  position: relative;
+}
+
+.toolbox .style-menu {
+  left: auto;
+  right: 0;
+  bottom: calc(100% + 0.65rem);
+  transform: none;
+}
+
+.setup-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-content: center;
+  background: linear-gradient(
+    180deg,
+    rgba(126, 196, 238, 0.35) 0%,
+    rgba(30, 42, 20, 0.55) 100%
+  );
+  animation: fade 0.35s ease;
+}
+
+.setup-modal[hidden] {
+  display: none;
+}
+
+.setup-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 1.6rem 2rem 1.4rem;
+  background: rgba(255, 252, 240, 0.94);
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+  box-shadow: 0 8px 32px rgba(20, 40, 10, 0.18);
+  min-width: 14rem;
+}
+
+.setup-title {
+  font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: #3a2a08;
+}
+
+.setup-side {
+  display: flex;
+  gap: 1.2rem;
+}
+
+.setup-side[hidden] {
+  display: none;
+}
+
+.setup-side button[aria-checked="true"],
+.style-menu button[aria-checked="true"] {
+  color: #1e2a14;
+  border-bottom-color: #1e2a14;
+}
+
+.setup-dialog button,
+.toolbox-panel button {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  color: var(--gold);
+  font: inherit;
+  font-size: 0.92rem;
+  letter-spacing: 0.22em;
+  padding: 0.2rem 0.1rem 0.35rem;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.setup-dialog button:hover,
+.toolbox-panel button:hover {
+  color: #3a2a08;
+  border-bottom-color: #3a2a08;
+}
+
+.setup-dialog button[aria-pressed="false"] {
+  opacity: 0.55;
+}
+
+.style-wrap {
+  position: relative;
+}
+
+.style-menu {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.85rem);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 5.5rem;
+}
+
+.style-menu[hidden] {
+  display: none;
+}
+
+.style-menu button {
+  white-space: nowrap;
+}
+
+.style-menu button[aria-checked="true"] {
+  color: #1e2a14;
+  border-bottom-color: #1e2a14;
+}
+
+.actions button,
+.endgame button {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  color: var(--gold);
+  font: inherit;
+  font-size: 0.92rem;
+  letter-spacing: 0.22em;
+  padding: 0.2rem 0.1rem 0.35rem;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.actions button:hover,
+.endgame button:hover {
+  color: #3a2a08;
+  border-bottom-color: #3a2a08;
+}
+
+.actions button[aria-pressed="false"] {
+  opacity: 0.55;
+}
+
+.endgame {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  gap: 1.6rem;
+  background: linear-gradient(
+    180deg,
+    rgba(12, 6, 4, 0.15) 0%,
+    rgba(12, 6, 4, 0.72) 100%
+  );
+  text-align: center;
+  animation: fade 0.5s ease;
+}
+
+.endgame[hidden] {
+  display: none;
+}
+
+.end-title {
+  font-family: "Ma Shan Zheng", serif;
+  font-size: clamp(2.4rem, 7vw, 4.2rem);
+  color: var(--gold);
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .brand {
+    top: 4vh;
+  }
+
+  .brand h1 {
+    letter-spacing: 0.16em;
+    text-indent: 0.16em;
+  }
+
+  .bar {
+    bottom: 3.5vh;
+  }
+
+  .toolbox {
+    right: 1rem;
+    bottom: 1rem;
+  }
+
+  .setup-dialog {
+    min-width: 12rem;
+    padding: 1.4rem 1.5rem 1.2rem;
+  }
+
+  .actions button {
+    letter-spacing: 0.12em;
+    font-size: 0.85rem;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.85rem 1rem;
+  }
+}

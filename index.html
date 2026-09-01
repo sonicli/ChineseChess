@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>楚河漢界 · 3D 中国象棋</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <header class="brand">
+      <h1>楚河漢界</h1>
+      <p>中国象棋</p>
+    </header>
+
+    <footer class="bar">
+      <p id="status" class="status">红方行棋</p>
+      <div class="actions">
+        <button type="button" id="btn-new">新局</button>
+      </div>
+    </footer>
+
+    <div class="toolbox" id="toolbox">
+      <div class="toolbox-panel">
+        <button type="button" id="btn-undo">悔棋</button>
+        <div class="style-wrap">
+          <button type="button" id="btn-style" aria-expanded="false" aria-controls="style-menu">
+            棋子样式
+          </button>
+          <div id="style-menu" class="style-menu" hidden role="menu"></div>
+        </div>
+      </div>
+      <button type="button" id="btn-toolbox" class="toolbox-trigger" aria-label="更多操作">
+        ···
+      </button>
+    </div>
+
+    <div id="setup-modal" class="setup-modal" hidden>
+      <div class="setup-dialog">
+        <p class="setup-title">新局设置</p>
+        <button type="button" id="setup-mode" aria-pressed="true">对弈电脑</button>
+        <div id="setup-side" class="setup-side">
+          <button type="button" data-side="red" aria-checked="true">执红</button>
+          <button type="button" data-side="black" aria-checked="false">执黑</button>
+        </div>
+        <button type="button" id="setup-start">开始对局</button>
+      </div>
+    </div>
+
+    <div id="endgame" class="endgame" hidden>
+      <p id="end-title" class="end-title"></p>
+      <button type="button" id="btn-again">再下一局</button>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
