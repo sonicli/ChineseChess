@@ -371,9 +371,14 @@ export function evaluate(grid: (Piece | null)[][], side: Side): number {
       if (cell.kind === "horse" || cell.kind === "cannon") {
         v += 1.2 * (4 - Math.abs(cell.file - 4));
       }
+      if (cell.kind === "chariot") {
+        v += 0.8 * (4 - Math.abs(cell.file - 4));
+      }
       score += cell.side === side ? v : -v;
     }
   }
+  if (isInCheck(grid, opposite(side))) score += 22;
+  if (isInCheck(grid, side)) score -= 22;
   return score;
 }
 
@@ -408,6 +413,42 @@ export function searchBestMove(
     if (score > alpha) alpha = score;
   }
   return best;
+}
+
+export type AiDifficulty = "easy" | "medium" | "hard";
+
+const AI_DEPTH: Record<AiDifficulty, number> = {
+  easy: 3,
+  medium: 4,
+  hard: 5,
+};
+
+/** Easy picks among near-best moves; medium/hard use deeper search. */
+export function searchAiMove(
+  grid: (Piece | null)[][],
+  side: Side,
+  difficulty: AiDifficulty,
+): Move | null {
+  const depth = AI_DEPTH[difficulty];
+  if (difficulty !== "easy") return searchBestMove(grid, side, depth);
+
+  const root = cloneGrid(grid);
+  const moves = generateLegalMoves(root, side);
+  if (!moves.length) return null;
+
+  const scored: { move: Move; score: number }[] = [];
+  for (const move of moves) {
+    const captured = applyMove(root, move);
+    const score = -negamax(root, depth - 1, -Infinity, Infinity, opposite(side));
+    revertMove(root, move, captured);
+    scored.push({ move, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  const bestScore = scored[0].score;
+  const margin = 12;
+  const candidates = scored.filter((s) => s.score >= bestScore - margin);
+  const pool = candidates.length > 1 ? candidates.slice(0, 3) : scored.slice(0, 2);
+  return pool[Math.floor(Math.random() * pool.length)].move;
 }
 
 function negamax(

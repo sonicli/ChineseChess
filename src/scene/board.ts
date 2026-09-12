@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CELL, squareToWorld, boardWoodTexture, riverLabel } from "./assets";
+import { squareToWorld, boardWoodTexture, riverLabel } from "./assets";
 
 function rail(
   a: THREE.Vector3,
@@ -14,8 +14,9 @@ function rail(
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(thick, 0.02, len + thick), material);
   mesh.position.set((a.x + b.x) / 2, y, (a.z + b.z) / 2);
   mesh.rotation.y = Math.atan2(dx, dz);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
+  // Grid rails sit on the surface — casting shadows caused blotchy mid-board darkening.
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
   return mesh;
 }
 
@@ -38,26 +39,24 @@ function star(file: number, rank: number, y: number, mat: THREE.Material): THREE
 
 export function createBoard(): THREE.Group {
   const root = new THREE.Group();
-  const topWood = boardWoodTexture();
-  const edgeWood = boardWoodTexture();
-  edgeWood.repeat.set(1.2, 1.2);
+  const wood = boardWoodTexture();
 
+  // Same map + tint so top/sides read as one piece of wood (sides only differ by lighting).
+  const woodColor = 0xe6d2b0;
   const topMat = new THREE.MeshStandardMaterial({
-    map: topWood,
-    roughness: 0.78,
-    metalness: 0.02,
-    color: 0xfff8ec,
+    map: wood,
+    roughness: 0.96,
+    metalness: 0,
+    color: woodColor,
   });
   const sideMat = new THREE.MeshStandardMaterial({
-    map: edgeWood,
-    roughness: 0.82,
-    metalness: 0.02,
-    color: 0xd4b896,
+    map: wood,
+    roughness: 0.98,
+    metalness: 0,
+    color: woodColor,
   });
-  const ink = new THREE.MeshStandardMaterial({
+  const ink = new THREE.MeshBasicMaterial({
     color: 0x3a2818,
-    roughness: 0.88,
-    metalness: 0.02,
   });
 
   const slab = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.42, 12.4), [
@@ -69,17 +68,18 @@ export function createBoard(): THREE.Group {
     sideMat,
   ]);
   slab.position.y = -0.21;
-  slab.castShadow = true;
+  // Avoid self-shadow on the playing surface.
+  slab.castShadow = false;
   slab.receiveShadow = true;
   root.add(slab);
 
   const lip = new THREE.Mesh(
     new THREE.BoxGeometry(11.6, 0.16, 12.8),
     new THREE.MeshStandardMaterial({
-      map: edgeWood,
-      color: 0xc4a882,
-      roughness: 0.84,
-      metalness: 0.02,
+      map: wood,
+      color: woodColor,
+      roughness: 0.98,
+      metalness: 0,
     }),
   );
   lip.position.y = -0.48;
@@ -139,21 +139,6 @@ export function createBoard(): THREE.Group {
     [8, 6],
   ];
   for (const [f, r] of stars) root.add(star(f, r, y + 0.001, ink));
-
-  const river = new THREE.Mesh(
-    new THREE.PlaneGeometry(8 * CELL + 0.08, CELL * 0.92),
-    new THREE.MeshStandardMaterial({
-      color: 0xe0ccaa,
-      roughness: 0.9,
-      metalness: 0,
-      transparent: true,
-      opacity: 0.28,
-    }),
-  );
-  river.rotation.x = -Math.PI / 2;
-  river.position.y = 0.006;
-  river.receiveShadow = true;
-  root.add(river);
 
   const chu = new THREE.Mesh(
     new THREE.PlaneGeometry(2.1, 0.7),

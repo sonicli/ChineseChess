@@ -3,26 +3,28 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { Game } from "./engine/game";
 import { type Move, type Piece, type Side, opposite, findKing } from "./engine/types";
-import { movesFrom, sameMove, searchBestMove } from "./engine/rules";
+import { movesFrom, sameMove, searchAiMove, type AiDifficulty } from "./engine/rules";
 import { tap } from "./audio";
 import { squareToWorld } from "./scene/assets";
 import { PIECE_STYLES, getPieceStyle, loadPieceStyleId, savePieceStyleId } from "./styles/registry";
 import type { PieceStyle } from "./styles/types";
 import { createBoard, createHitPoints } from "./scene/board";
-import { createDust, createEnvironment } from "./scene/environment";
+import { createDust, createEnvironment, setDustTheme } from "./scene/environment";
 import { MoveMarkers } from "./scene/markers";
 import { PieceView } from "./scene/pieces";
+import { applyDocumentTheme, loadTheme, saveTheme, type ThemeMode } from "./theme";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#scene")!;
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
+const modeLabelEl = document.querySelector<HTMLParagraphElement>("#mode-label")!;
 const endgameEl = document.querySelector<HTMLDivElement>("#endgame")!;
 const endTitleEl = document.querySelector<HTMLParagraphElement>("#end-title")!;
 const styleBtn = document.querySelector<HTMLButtonElement>("#btn-style")!;
 const styleMenu = document.querySelector<HTMLDivElement>("#style-menu")!;
 const setupModal = document.querySelector<HTMLDivElement>("#setup-modal")!;
-const setupModeBtn = document.querySelector<HTMLButtonElement>("#setup-mode")!;
-const setupSideWrap = document.querySelector<HTMLDivElement>("#setup-side")!;
+const setupOptions = document.querySelector<HTMLDivElement>("#setup-options")!;
 const setupStartBtn = document.querySelector<HTMLButtonElement>("#setup-start")!;
+const themeBtn = document.querySelector<HTMLButtonElement>("#btn-theme")!;
 
 const game = new Game();
 const views = new Map<string, PieceView>();
@@ -30,10 +32,19 @@ const markers = new MoveMarkers();
 
 let currentStyle: PieceStyle = getPieceStyle(loadPieceStyleId());
 
+type SetupMode = AiDifficulty | "pvp";
+
+const MODE_LABEL: Record<SetupMode, string> = {
+  easy: "難度‧簡單",
+  medium: "難度‧中等",
+  hard: "難度‧困難",
+  pvp: "雙人對弈",
+};
+
 let vsAI = true;
 let playerSide: Side = "red";
-let pendingVsAI = true;
-let pendingSide: Side = "red";
+let aiDifficulty: AiDifficulty = "medium";
+let pendingMode: SetupMode = "medium";
 let busy = true;
 let selected: Piece | null = null;
 let hoverId: string | null = null;
@@ -50,6 +61,9 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+let theme: ThemeMode = loadTheme();
+applyDocumentTheme(theme);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
@@ -70,11 +84,13 @@ controls.minPolarAngle = 0.38;
 controls.maxPolarAngle = 1.28;
 controls.dampingFactor = 0.06;
 
-createEnvironment(scene);
+const environment = createEnvironment(scene);
+environment.applyTheme(theme);
 const hits = createHitPoints();
 scene.add(hits);
 scene.add(markers.group);
 const dust = createDust();
+setDustTheme(dust, theme);
 scene.add(dust);
 
 const raycaster = new THREE.Raycaster();
@@ -122,25 +138,33 @@ function spawnPieces(drop: boolean): void {
   }
 }
 
+function currentMode(): SetupMode {
+  return vsAI ? aiDifficulty : "pvp";
+}
+
+function syncModeLabel(): void {
+  modeLabelEl.textContent = MODE_LABEL[currentMode()];
+}
+
 function setStatus(): void {
   const outcome = game.outcome;
   statusEl.classList.remove("check", "over");
   if (outcome === "checkmate" || outcome === "stalemate") {
-    const winner = opposite(game.side) === "red" ? "红胜" : "黑胜";
-    const how = outcome === "checkmate" ? "绝杀" : "困毙";
-    statusEl.textContent = `${winner}  ·  ${how}`;
+    const winner = opposite(game.side) === "red" ? "紅勝" : "黑勝";
+    const how = outcome === "checkmate" ? "絕殺" : "困斃";
+    statusEl.textContent = `${winner} · ${how}`;
     statusEl.classList.add("over");
-    endTitleEl.textContent = `${winner}  ·  ${how}`;
+    endTitleEl.textContent = `${winner} · ${how}`;
     endgameEl.hidden = false;
     return;
   }
   endgameEl.hidden = true;
   if (outcome === "check") {
     statusEl.classList.add("check");
-    statusEl.textContent = game.side === "red" ? "红方被将军" : "黑方被将军";
+    statusEl.textContent = game.side === "red" ? "紅方 · 被將軍" : "黑方 · 被將軍";
     return;
   }
-  statusEl.textContent = game.side === "red" ? "红方行棋" : "黑方行棋";
+  statusEl.textContent = game.side === "red" ? "紅方 · 行棋" : "黑方 · 行棋";
 }
 
 function clearSelection(): void {
@@ -190,7 +214,7 @@ function isAITurn(): boolean {
 }
 
 function thinkingLabel(): string {
-  return game.side === "red" ? "红方思考中" : "黑方思考中";
+  return game.side === "red" ? "紅方 · 思考中" : "黑方 · 思考中";
 }
 
 function scheduleAI(): void {
@@ -250,7 +274,7 @@ function runAI(): void {
     busy = false;
     return;
   }
-  const move = searchBestMove(game.grid, game.side, 2);
+  const move = searchAiMove(game.grid, game.side, aiDifficulty);
   if (!move) {
     setStatus();
     busy = false;
@@ -350,8 +374,7 @@ function undo(): void {
 }
 
 function openSetupModal(): void {
-  pendingVsAI = vsAI;
-  pendingSide = playerSide;
+  pendingMode = vsAI ? aiDifficulty : "pvp";
   syncSetupModal();
   setupModal.hidden = false;
 }
@@ -361,17 +384,20 @@ function closeSetupModal(): void {
 }
 
 function syncSetupModal(): void {
-  setupModeBtn.setAttribute("aria-pressed", String(pendingVsAI));
-  setupModeBtn.textContent = pendingVsAI ? "对弈电脑" : "双人对弈";
-  setupSideWrap.hidden = !pendingVsAI;
-  for (const btn of setupSideWrap.querySelectorAll<HTMLButtonElement>("button[data-side]")) {
-    btn.setAttribute("aria-checked", String(btn.dataset.side === pendingSide));
+  for (const btn of setupOptions.querySelectorAll<HTMLButtonElement>("button[data-mode]")) {
+    btn.setAttribute("aria-checked", String(btn.dataset.mode === pendingMode));
   }
 }
 
 function confirmSetup(): void {
-  vsAI = pendingVsAI;
-  playerSide = pendingSide;
+  if (pendingMode === "pvp") {
+    vsAI = false;
+  } else {
+    vsAI = true;
+    aiDifficulty = pendingMode;
+    playerSide = "red";
+  }
+  syncModeLabel();
   faceCamera(vsAI ? playerSide : "red");
   closeSetupModal();
   newGame();
@@ -386,19 +412,42 @@ function newGame(): void {
   busy = true;
 }
 
+function syncThemeButton(): void {
+  themeBtn.setAttribute("aria-label", theme === "dark" ? "切換為淺色模式" : "切換為深色模式");
+  themeBtn.title = theme === "dark" ? "淺色模式" : "深色模式";
+}
+
+function setTheme(next: ThemeMode): void {
+  theme = next;
+  applyDocumentTheme(theme);
+  saveTheme(theme);
+  environment.applyTheme(theme);
+  setDustTheme(dust, theme);
+  renderer.toneMappingExposure = theme === "dark" ? 1.08 : 1.02;
+  const living = new Map(game.pieces().map((piece) => [piece.id, piece]));
+  for (const view of views.values()) {
+    const piece = living.get(view.id);
+    if (piece) view.rebuild(piece, currentStyle);
+  }
+  syncThemeButton();
+  tap(360, 0.04);
+}
+
+syncThemeButton();
+syncModeLabel();
+
+themeBtn.addEventListener("click", () => {
+  setTheme(theme === "dark" ? "light" : "dark");
+});
+
 document.querySelector("#btn-new")!.addEventListener("click", openSetupModal);
 document.querySelector("#btn-again")!.addEventListener("click", openSetupModal);
 document.querySelector("#btn-undo")!.addEventListener("click", undo);
 
-setupModeBtn.addEventListener("click", () => {
-  pendingVsAI = !pendingVsAI;
-  syncSetupModal();
-});
-
-setupSideWrap.addEventListener("click", (ev) => {
-  const btn = (ev.target as HTMLElement).closest("button[data-side]");
+setupOptions.addEventListener("click", (ev) => {
+  const btn = (ev.target as HTMLElement).closest("button[data-mode]");
   if (!btn) return;
-  pendingSide = btn.getAttribute("data-side") as Side;
+  pendingMode = btn.getAttribute("data-mode") as SetupMode;
   syncSetupModal();
 });
 
@@ -419,9 +468,21 @@ function renderStyleMenu(): void {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.role = "menuitemradio";
-    btn.textContent = style.label;
     btn.setAttribute("aria-checked", String(style.id === currentStyle.id));
     btn.addEventListener("click", () => applyPieceStyle(style.id));
+
+    const preview = document.createElement("canvas");
+    preview.width = 64;
+    preview.height = 64;
+    preview.className = "style-preview";
+    preview.setAttribute("aria-hidden", "true");
+    style.drawPreview(preview);
+
+    const label = document.createElement("span");
+    label.className = "style-label";
+    label.textContent = style.label;
+
+    btn.append(preview, label);
     styleMenu.append(btn);
   }
 }
@@ -537,8 +598,8 @@ function tick(): void {
 
 async function boot(): Promise<void> {
   try {
-    await document.fonts.load('64px "Ma Shan Zheng"');
-    await document.fonts.load('700 124px "Noto Serif SC"');
+    await document.fonts.load('700 64px "Noto Serif TC"');
+    await document.fonts.load('700 124px "Noto Serif TC"');
   } catch {
     /* local fallback fonts still render glyphs */
   }

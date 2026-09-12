@@ -1,4 +1,4 @@
-# 楚河漢界 · 3D 中国象棋
+# 楚河漢界 · 3D 中國象棋
 
 Browser-based 3D Chinese chess (Xiangqi) built with **Three.js**, **TypeScript**, and **Vite**.
 
@@ -59,6 +59,6 @@ Vite is configured with `base: "/ChineseChess/"` so asset paths work under that 
 
 ## Playing
 
-- Click **新局** to open setup: choose vs computer or two-player, and red or black when playing the AI.
-- Bottom-right **···** menu: **悔棋** (undo) and **棋子样式** (piece style: traditional or Staunton).
+- Use the top menu bar: **新局**, **悔棋**, **棋子樣式**, and the sun/moon control for **淺色 / 深色** mode.
+- Click **新局** to open setup: **對弈電腦** / **雙人對弈**, **執紅** / **執黑**, and difficulty (**簡單** / **中等** / **困難**) when playing the AI.
 - Drag to rotate the board; click a piece, then a highlighted square to move.

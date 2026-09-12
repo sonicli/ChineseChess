@@ -13,4 +13,6 @@ export interface PieceStyle {
   selectLift: number;
   hoverLift: number;
   build(piece: Piece): PieceBuild;
+  /** Draw a small menu thumbnail onto the canvas (square). */
+  drawPreview(canvas: HTMLCanvasElement): void;
 }

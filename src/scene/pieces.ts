@@ -48,8 +48,12 @@ export class PieceView {
   setSelected(on: boolean): void {
     this.selected = on;
     for (const mat of this.mats) {
-      mat.emissive.setHex(on ? 0x5a3a10 : 0x000000);
-      mat.emissiveIntensity = on ? 0.45 : 0;
+      if (on) {
+        mat.emissive.setHex(0x5a3a10);
+        mat.emissiveIntensity = 0.45;
+      } else {
+        this.restoreEmissive(mat);
+      }
     }
     this.group.position.y = this.style.groundY + (on ? this.style.selectLift : 0);
   }
@@ -62,8 +66,12 @@ export class PieceView {
   pulse(amount: number): void {
     if (this.selected) return;
     for (const mat of this.mats) {
-      mat.emissive.setHex(0x9a2218);
-      mat.emissiveIntensity = amount;
+      if (amount <= 0) {
+        this.restoreEmissive(mat);
+      } else {
+        mat.emissive.setHex(0x9a2218);
+        mat.emissiveIntensity = amount;
+      }
     }
   }
 
@@ -75,11 +83,21 @@ export class PieceView {
     this.unmount();
   }
 
+  private restoreEmissive(mat: THREE.MeshStandardMaterial): void {
+    const base = mat.userData.baseEmissive as THREE.Color | undefined;
+    mat.emissive.copy(base ?? new THREE.Color(0x000000));
+    mat.emissiveIntensity = (mat.userData.baseEmissiveIntensity as number | undefined) ?? 0;
+  }
+
   private mount(piece: Piece, style: PieceStyle): void {
     this.style = style;
     const built = style.build(piece);
     this.visual = built.root;
     this.mats = built.materials;
+    for (const mat of this.mats) {
+      mat.userData.baseEmissive = mat.emissive.clone();
+      mat.userData.baseEmissiveIntensity = mat.emissiveIntensity;
+    }
     this.group.add(built.root);
     tag(this.group, piece.id);
   }

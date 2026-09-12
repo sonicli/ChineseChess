@@ -61,7 +61,7 @@ function envMap(): THREE.CanvasTexture {
 
 function drawGlyph(ctx: CanvasRenderingContext2D, glyph: string, color: string): void {
   ctx.fillStyle = color;
-  ctx.font = '700 248px "Noto Serif SC", "Songti SC", "SimSun", serif';
+  ctx.font = '700 248px "Noto Serif TC", "Noto Serif SC", "Songti TC", "SimSun", serif';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(glyph, SIZE / 2, SIZE / 2);
@@ -229,7 +229,7 @@ function ring(geometry: THREE.TorusGeometry, material: THREE.Material, y: number
 
 export const traditional: PieceStyle = {
   id: "traditional",
-  label: "传统",
+  label: "傳統",
   groundY: 0.09,
   selectLift: 0.06,
   hoverLift: 0.03,
@@ -278,5 +278,32 @@ export const traditional: PieceStyle = {
     if (piece.kind === "king") root.scale.setScalar(1.08);
     root.rotation.y = piece.side === "red" ? 0 : Math.PI;
     return { root, materials: [body, face, goldFill, ringGold] };
+  },
+  drawPreview(canvas: HTMLCanvasElement): void {
+    const size = canvas.width;
+    const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, size, size);
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size * 0.38;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = "#8f1a24";
+    ctx.fill();
+    ctx.lineWidth = size * 0.055;
+    ctx.strokeStyle = "#e2c36a";
+    ctx.stroke();
+    ctx.lineWidth = size * 0.02;
+    ctx.strokeStyle = "#6a1018";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.82, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = "#f0d060";
+    ctx.font = `700 ${Math.round(size * 0.42)}px "Noto Serif TC", "Noto Serif SC", serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("帥", cx, cy + size * 0.03);
   },
 };
